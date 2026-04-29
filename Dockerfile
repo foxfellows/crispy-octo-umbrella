@@ -5,5 +5,5 @@ FROM nginx:alpine
 # If you have a folder of files, use: COPY . /usr/share/nginx/html
 COPY index.html /usr/share/nginx/html/index.html
 
-# Expose port 80
-EXPOSE 80
+# Expose port 8080
+EXPOSE 8080
