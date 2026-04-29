@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Race Log">
+<title>Race Log</title>
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f2f1ee;
+    --border: #e8e6e1;
+    --text: #1a1917;
+    --text2: #6b6963;
+    --text3: #a09d97;
+    --accent: #1a1917;
+    --green: #166534;
+    --green-bg: #dcfce7;
+    --blue: #1e40af;
+    --blue-bg: #dbeafe;
+    --orange: #9a3412;
+    --orange-bg: #ffedd5;
+    --purple: #6b21a8;
+    --purple-bg: #f3e8ff;
+    --gray-bg: #f1f0ec;
+    --red: #dc2626;
+    --gold: #92400e;
+    --gold-bg: #fef3c7;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+  /* ── Header ── */
+  .header {
+    background: var(--accent);
+    color: #fff;
+    padding: calc(var(--safe-top) + 16px) 20px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-inner { display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+  .header p { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+  .btn-add {
+    background: #fff; color: var(--accent);
+    border: none; padding: 9px 16px; border-radius: 10px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    flex-shrink: 0;
+  }
+  /* ── PR Cards ── */
+  .pr-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; padding: 16px;
+  }
+  .pr-card {
+    background: var(--surface); border-radius: 12px;
+    padding: 12px 10px; border: 1px solid var(--border);
+  }
+  .pr-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .pr-value { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.1; }
+  .pr-sub { font-size: 10px; color: var(--text3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* ── Filters ── */
+  .filters { display: flex; gap: 8px; padding: 0 16px 12px; overflow-x: auto; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-btn {
+    padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 600;
+    border: 1.5px solid var(--border); background: transparent; color: var(--text2);
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  /* ── Race Cards (mobile) ── */
+  .race-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(var(--safe-bottom) + 80px); }
+  .race-card {
+    background: var(--surface); border-radius: 14px;
+    border: 1px solid var(--border); padding: 14px 16px;
+    position: relative;
+  }
+  .race-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+  .race-name { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .race-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .dist-badge {
+    padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .race-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .race-stat { background: var(--surface2); border-radius: 8px; padding: 8px 10px; }
+  .race-stat-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+  .race-stat-value { font-size: 13px; font-weight: 700; color: var(--text); }
+  .places-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 6px; }
+  .place-cell { background: var(--surface2); border-radius: 8px; padding: 8px 10px; }
+  .place-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+  .place-value { font-size: 12px; font-weight: 700; }
+  .race-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-edit-sm {
+    flex: 1; padding: 8px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: transparent; font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer;
+  }
+  .btn-del-sm {
+    padding: 8px 14px; border-radius: 8px; border: 1.5px solid #fecaca;
+    background: transparent; font-size: 13px; font-weight: 600; color: var(--red); cursor: pointer;
+  }
+  .pr-tag {
+    display: inline-block; background: var(--gold-bg); color: var(--gold);
+    font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 4px;
+    margin-left: 5px; vertical-align: middle; letter-spacing: 0.05em;
+  }
+  .notes-text { font-size: 11px; color: var(--text3); margin-top: 4px; font-style: italic; }
+  /* ── Empty ── */
+  .empty { text-align: center; padding: 60px 32px; color: var(--text3); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-title { font-size: 16px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; }
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: flex-end; justify-content: center;
+    z-index: 100; padding-bottom: var(--safe-bottom);
+  }
+  .modal {
+    background: var(--surface); border-radius: 20px 20px 0 0;
+    padding: 24px 20px calc(var(--safe-bottom) + 20px);
+    width: 100%; max-width: 600px;
+    max-height: 92vh; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 99px; margin: 0 auto 20px; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; padding: 13px 14px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    font-size: 16px; color: var(--text); font-family: inherit;
+    -webkit-appearance: none; appearance: none;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .field-hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .field-error { font-size: 11px; color: var(--red); margin-top: 4px; }
+  .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-cancel {
+    flex: 1; padding: 14px; border-radius: 12px; border: 1.5px solid var(--border);
+    background: transparent; font-size: 16px; font-weight: 600; color: var(--text2); cursor: pointer;
+  }
+  .btn-save {
+    flex: 2; padding: 14px; border-radius: 12px; border: none;
+    background: var(--accent); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  /* ── Confirm dialog ── */
+  .confirm-box {
+    background: var(--surface); border-radius: 14px; padding: 24px 20px;
+    width: 300px; text-align: center;
+  }
+  .confirm-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .confirm-sub { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
+  .confirm-btns { display: flex; gap: 10px; }
+  .confirm-btns button { flex: 1; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; }
+  /* ── FAB ── */
+  .fab {
+    position: fixed; bottom: calc(var(--safe-bottom) + 20px); right: 20px;
+    width: 56px; height: 56px; border-radius: 99px;
+    background: var(--accent); color: #fff; border: none;
+    font-size: 26px; font-weight: 300; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 20;
+  }
+  /* ── Legend ── */
+  .legend { display: flex; gap: 14px; padding: 0 16px 14px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <h1>Race Log</h1>
+      <p id="raceCount">0 races tracked</p>
+    </div>
+    <button class="btn-add" onclick="openForm()">+ Add race</button>
+  </div>
+</div>
+
+<div class="pr-strip">
+  <div class="pr-card">
+    <div class="pr-label">Races</div>
+    <div class="pr-value" id="statTotal">0</div>
+    <div class="pr-sub">all distances</div>
+  </div>
+  <div class="pr-card">
+    <div class="pr-label">5K PR</div>
+    <div class="pr-value" id="stat5k" style="color:var(--green)">—</div>
+    <div class="pr-sub" id="stat5kSub">no races yet</div>
+  </div>
+  <div class="pr-card">
+    <div class="pr-label">10K PR</div>
+    <div class="pr-value" id="stat10k" style="color:var(--blue)">—</div>
+    <div class="pr-sub" id="stat10kSub">no races yet</div>
+  </div>
+  <div class="pr-card">
+    <div class="pr-label">Half PR</div>
+    <div class="pr-value" id="statHalf" style="color:var(--orange)">—</div>
+    <div class="pr-sub" id="statHalfSub">no races yet</div>
+  </div>
+</div>
+
+<div class="filters" id="filters"></div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Top 10%</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Top 25%</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Top 50%</div>
+  <div class="legend-item"><span style="background:var(--gold-bg);color:var(--gold);font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px">PR</span> Personal record</div>
+</div>
+
+<div class="race-list" id="raceList"></div>
+
+<button class="fab" onclick="openForm()" title="Add race">+</button>
+
+<!-- Form Modal -->
+<div class="modal-overlay" id="formModal" style="display:none" onclick="closeIfOutside(event)">
+  <div class="modal" id="formBox">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="formTitle">Log a race</div>
+
+    <div class="field">
+      <label>Race name *</label>
+      <input type="text" id="f-name" placeholder="e.g. Nationwide Children's Hospital 10K" autocomplete="off">
+      <div class="field-error" id="err-name" style="display:none">Race name is required</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Distance *</label>
+        <select id="f-distance">
+          <option>5K</option><option>10K</option><option>Half Marathon</option>
+          <option>8K</option><option>15K</option><option>10 Mile</option>
+          <option>4 Mile</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="f-date">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Finish time</label>
+        <input type="text" id="f-time" placeholder="28:45 or 1:52:30" inputmode="numeric">
+        <div class="field-hint">H:MM:SS or MM:SS</div>
+        <div class="field-error" id="err-time" style="display:none">Use MM:SS or H:MM:SS</div>
+      </div>
+      <div class="field">
+        <label>Pace per mile</label>
+        <input type="text" id="f-pace" placeholder="9:08" inputmode="numeric">
+        <div class="field-hint">MM:SS format</div>
+      </div>
+    </div>
+
+    <div class="field-row3">
+      <div class="field">
+        <label>Overall place</label>
+        <input type="text" id="f-overall" placeholder="142 / 850" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Sex place</label>
+        <input type="text" id="f-sex" placeholder="58 / 412" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Age group</label>
+        <input type="text" id="f-age" placeholder="12 / 65" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Notes (optional)</label>
+      <input type="text" id="f-notes" placeholder="Weather, course details, how you felt…">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeForm()">Cancel</button>
+      <button class="btn-save" onclick="saveRace()">Save race</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div class="modal-overlay" id="confirmModal" style="display:none">
+  <div class="confirm-box">
+    <div class="confirm-title">Delete this race?</div>
+    <div class="confirm-sub">This can't be undone.</div>
+    <div class="confirm-btns">
+      <button style="background:var(--surface2);color:var(--text)" onclick="closeConfirm()">Cancel</button>
+      <button style="background:var(--red);color:#fff" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'race_log_v2';
+const DISTANCES = ['5K','10K','Half Marathon','8K','15K','10 Mile','4 Mile','Other'];
+
+let races = [];
+let editId = null;
+let deleteId = null;
+let filterDist = 'All';
+
+// ── Persistence ──
+function load() {
+  try { races = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { races = []; }
+}
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(races));
+}
+
+// ── Time helpers ──
+function timeToSec(t) {
+  if (!t) return null;
+  const p = t.trim().split(':').map(Number);
+  if (p.some(isNaN)) return null;
+  if (p.length === 2) return p[0]*60 + p[1];
+  if (p.length === 3) return p[0]*3600 + p[1]*60 + p[2];
+  return null;
+}
+function placeRatio(s) {
+  if (!s) return null;
+  const m = s.match(/(\d+)\s*[\/]\s*(\d+)/);
+  return m ? parseInt(m[1]) / parseInt(m[2]) : null;
+}
+function placeNum(s) {
+  if (!s) return null;
+  const m = s.match(/^(\d+)/);
+  return m ? parseInt(m[1]) : null;
+}
+function placeColor(ratio) {
+  if (ratio === null) return 'var(--text)';
+  if (ratio <= 0.10) return 'var(--green)';
+  if (ratio <= 0.25) return 'var(--blue)';
+  if (ratio <= 0.50) return 'var(--purple)';
+  return 'var(--text2)';
+}
+
+// ── Distance badge colors ──
+const DIST_STYLE = {
+  '5K':           'background:var(--green-bg);color:var(--green)',
+  '10K':          'background:var(--blue-bg);color:var(--blue)',
+  'Half Marathon':'background:var(--orange-bg);color:var(--orange)',
+};
+function distStyle(d) { return DIST_STYLE[d] || 'background:var(--gray-bg);color:var(--text2)'; }
+
+// ── PR map ──
+function buildPRMap() {
+  const m = {};
+  races.forEach(r => {
+    const s = timeToSec(r.time);
+    if (s && (!m[r.distance] || s < m[r.distance].s)) m[r.distance] = { id: r.id, s };
+  });
+  return m;
+}
+
+// ── Medal emoji ──
+function medal(n) {
+  if (n === 1) return '🥇 ';
+  if (n === 2) return '🥈 ';
+  if (n === 3) return '🥉 ';
+  return '';
+}
+
+// ── Render ──
+function render() {
+  const prMap = buildPRMap();
+
+  // Counts
+  document.getElementById('raceCount').textContent = `${races.length} ${races.length===1?'race':'races'} tracked`;
+  document.getElementById('statTotal').textContent = races.length;
+
+  // PR cards
+  function setStatCard(dist, valId, subId) {
+    const best = races.filter(r=>r.distance===dist).sort((a,b)=>(timeToSec(a.time)||Infinity)-(timeToSec(b.time)||Infinity))[0];
+    document.getElementById(valId).textContent = best ? (best.time || '—') : '—';
+    document.getElementById(subId).textContent = best ? (best.name || '') : 'no races yet';
+  }
+  setStatCard('5K','stat5k','stat5kSub');
+  setStatCard('10K','stat10k','stat10kSub');
+  setStatCard('Half Marathon','statHalf','statHalfSub');
+
+  // Filters
+  const distOptions = ['All', ...DISTANCES.filter(d => races.some(r=>r.distance===d))];
+  if (!distOptions.includes(filterDist)) filterDist = 'All';
+  document.getElementById('filters').innerHTML = distOptions.map(d =>
+    `<button class="filter-btn ${d===filterDist?'active':''}" onclick="setFilter('${d}')">${d==='Half Marathon'?'Half':d}</button>`
+  ).join('');
+
+  // Filtered + sorted
+  let data = filterDist === 'All' ? [...races] : races.filter(r=>r.distance===filterDist);
+  data.sort((a,b) => {
+    const ad = a.date || String(a.year||''), bd = b.date || String(b.year||'');
+    return bd.localeCompare(ad); // newest first
+  });
+
+  const list = document.getElementById('raceList');
+  if (data.length === 0) {
+    list.innerHTML = `<div class="empty">
+      <div class="empty-icon">🏁</div>
+      <div class="empty-title">${races.length===0?'No races logged yet':'No races match this filter'}</div>
+      <div class="empty-sub">${races.length===0?'Tap + to log your first result.':'Try a different distance.'}</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = data.map(r => {
+    const isPR = prMap[r.distance]?.id === r.id && races.filter(x=>x.distance===r.distance).length > 1;
+    const dateStr = r.date ? new Date(r.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : (r.year || '');
+    const overallRatio = placeRatio(r.overall);
+    const sexRatio = placeRatio(r.sex);
+    const ageRatio = placeRatio(r.age);
+    const overallN = placeNum(r.overall);
+
+    return `<div class="race-card">
+      <div class="race-card-top">
+        <div>
+          <div class="race-name">${r.name||'Unnamed race'}${isPR?'<span class="pr-tag">PR</span>':''}</div>
+          <div class="race-meta">${dateStr}</div>
+          ${r.notes?`<div class="notes-text">${r.notes}</div>`:''}
+        </div>
+        <span class="dist-badge" style="${distStyle(r.distance)}">${r.distance}</span>
+      </div>
+      <div class="race-stats">
+        <div class="race-stat">
+          <div class="race-stat-label">Time</div>
+          <div class="race-stat-value">${r.time||'—'}</div>
+        </div>
+        <div class="race-stat">
+          <div class="race-stat-label">Pace/mi</div>
+          <div class="race-stat-value">${r.pace?r.pace+'/mi':'—'}</div>
+        </div>
+        <div class="race-stat">
+          <div class="race-stat-label">Year</div>
+          <div class="race-stat-value">${r.year||'—'}</div>
+        </div>
+      </div>
+      <div class="places-row">
+        <div class="place-cell">
+          <div class="place-label">Overall</div>
+          <div class="place-value" style="color:${placeColor(overallRatio)}">${medal(overallN)}${r.overall||'—'}</div>
+        </div>
+        <div class="place-cell">
+          <div class="place-label">Sex</div>
+          <div class="place-value" style="color:${placeColor(sexRatio)}">${r.sex||'—'}</div>
+        </div>
+        <div class="place-cell">
+          <div class="place-label">Age group</div>
+          <div class="place-value" style="color:${placeColor(ageRatio)}">${r.age||'—'}</div>
+        </div>
+      </div>
+      <div class="race-actions">
+        <button class="btn-edit-sm" onclick="openEdit('${r.id}')">Edit</button>
+        <button class="btn-del-sm" onclick="askDelete('${r.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Filter ──
+function setFilter(d) { filterDist = d; render(); }
+
+// ── Form ──
+function openForm() {
+  editId = null;
+  document.getElementById('formTitle').textContent = 'Log a race';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-distance').value = '5K';
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-time').value = '';
+  document.getElementById('f-pace').value = '';
+  document.getElementById('f-overall').value = '';
+  document.getElementById('f-sex').value = '';
+  document.getElementById('f-age').value = '';
+  document.getElementById('f-notes').value = '';
+  clearErrors();
+  document.getElementById('formModal').style.display = 'flex';
+}
+function openEdit(id) {
+  const r = races.find(x=>x.id===id);
+  if (!r) return;
+  editId = id;
+  document.getElementById('formTitle').textContent = 'Edit race';
+  document.getElementById('f-name').value = r.name||'';
+  document.getElementById('f-distance').value = r.distance||'5K';
+  document.getElementById('f-date').value = r.date||'';
+  document.getElementById('f-time').value = r.time||'';
+  document.getElementById('f-pace').value = r.pace||'';
+  document.getElementById('f-overall').value = r.overall||'';
+  document.getElementById('f-sex').value = r.sex||'';
+  document.getElementById('f-age').value = r.age||'';
+  document.getElementById('f-notes').value = r.notes||'';
+  clearErrors();
+  document.getElementById('formModal').style.display = 'flex';
+}
+function closeForm() { document.getElementById('formModal').style.display = 'none'; }
+function closeIfOutside(e) { if (e.target.id==='formModal') closeForm(); }
+function clearErrors() {
+  document.getElementById('err-name').style.display = 'none';
+  document.getElementById('err-time').style.display = 'none';
+  document.getElementById('f-name').style.borderColor = '';
+  document.getElementById('f-time').style.borderColor = '';
+}
+
+function saveRace() {
+  clearErrors();
+  const name = document.getElementById('f-name').value.trim();
+  const dist = document.getElementById('f-distance').value;
+  const date = document.getElementById('f-date').value;
+  const time = document.getElementById('f-time').value.trim();
+  const pace = document.getElementById('f-pace').value.trim();
+  const overall = document.getElementById('f-overall').value.trim();
+  const sex = document.getElementById('f-sex').value.trim();
+  const age = document.getElementById('f-age').value.trim();
+  const notes = document.getElementById('f-notes').value.trim();
+  const year = date ? date.slice(0,4) : new Date().getFullYear();
+
+  let valid = true;
+  if (!name) {
+    document.getElementById('err-name').style.display = 'block';
+    document.getElementById('f-name').style.borderColor = '#f87171';
+    valid = false;
+  }
+  if (time && !timeToSec(time)) {
+    document.getElementById('err-time').style.display = 'block';
+    document.getElementById('f-time').style.borderColor = '#f87171';
+    valid = false;
+  }
+  if (!valid) return;
+
+  const r = { id: editId || (Date.now().toString(36)+Math.random().toString(36).slice(2,5)), name, distance:dist, date, year, time, pace, overall, sex, age, notes };
+
+  if (editId) {
+    const i = races.findIndex(x=>x.id===editId);
+    if (i>=0) races[i] = r;
+  } else {
+    races.push(r);
+  }
+  save();
+  closeForm();
+  render();
+}
+
+// ── Delete ──
+function askDelete(id) { deleteId = id; document.getElementById('confirmModal').style.display = 'flex'; }
+function closeConfirm() { document.getElementById('confirmModal').style.display = 'none'; deleteId = null; }
+function confirmDelete() {
+  races = races.filter(r=>r.id!==deleteId);
+  save(); closeConfirm(); render();
+}
+
+// ── Init ──
+load();
+render();
+</script>
+</body>
+</html>
